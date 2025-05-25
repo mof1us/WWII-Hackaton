@@ -5,6 +5,7 @@ import aiohttp
 import logging
 from pprint import pprint
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 logging.basicConfig(encoding='utf-8', level=logging.DEBUG)  # логгер
@@ -14,15 +15,17 @@ class TextGenerator:
         self.api_key = os.getenv('GEMINI_API')
         self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
         self.logger = logging.getLogger(__name__)  # Логгер
-        self.proxies = "socks5://localhost:1080"
-        self.config_path = 'proxy_config.json'
+        self.proxies = "socks5://localhost:1081"
+        self.config_path = 'TextGenerator/proxy_config.json'
         self.is_xray_started = False
+        self.text_generation_result = None
 
         if not self.api_key:
             self.logger.error("GEMINI_API not found in environment variables")
             raise ValueError("GEMINI_API environment variable is required")
 
         self.logger.info("GeminiLetterAnalyzer initialized")
+
 
 
     #start proxy
@@ -34,7 +37,6 @@ class TextGenerator:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
-
             if process.returncode is not None:
                 stderr = await process.stderr.read()
                 self.logger.error(f"Xray failed to start: {stderr.decode()}")
@@ -72,10 +74,8 @@ class TextGenerator:
     "подробный промпт 1",
     "подробный промпт 2"
   ],
-  "original_text": "текст с удар+ениями"
+  "original_text": "текст с удар+ениями"
 {"}"}'''
-
-
 
     #parser
     def _parse_response(self, response_data):
@@ -119,6 +119,7 @@ class TextGenerator:
             }
 
             self.logger.debug("Sending request to Gemini API")
+            # test_resp = requests.get("https://google.com", proxies={"http": self.proxies, "https": self.proxies})
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     self.url,
@@ -137,7 +138,7 @@ class TextGenerator:
 
                     result = self._parse_response(response_data)
                     self.logger.info("Letter analysis completed successfully")
-                    return result
+                    self.text_generation_result = result
 
         except asyncio.TimeoutError:
             self.logger.warning("Request to Gemini API timed out after 10 seconds")

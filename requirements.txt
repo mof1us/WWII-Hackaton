@@ -14,3 +14,5 @@ speechkit
 python-dotenv
 fastapi
 uvicorn
+moviepy
+aiohttp_socks

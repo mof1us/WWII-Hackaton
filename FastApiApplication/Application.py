@@ -1,4 +1,5 @@
 import asyncio
+import base64
 
 import uvicorn
 from fastapi import FastAPI, Body
@@ -31,8 +32,33 @@ class Application:
         return JSONResponse({
             "status_code": 0,
             "user_id": user_id,
-            "text_generation_result": current_process.text_gen_result
         })
+
+    async def get_text_generation_result(self, data=Body()) -> JSONResponse:
+        # body format: {"user_id": 0}
+        if "user_id" not in data:
+            return JSONResponse(
+                {"status_code": -1,
+                 "message": "wrong body"}
+            )
+        if data["user_id"] not in self.running_processes:
+            return JSONResponse({
+                "status_code": -2,
+                "message": "generation prcess not finded"
+            })
+
+        user_id = data["user_id"]
+        result = await self.running_processes[user_id].get_text_generation_result()
+        if result:
+            return JSONResponse({
+                "status_code": 0,
+                "result": result
+            })
+        else:
+            return JSONResponse({
+                "status_code": 1,
+                "message": "text generation in process"
+            })
 
     async def init_img_generation(self, data=Body()) -> JSONResponse:
         # body format: {"user_id": 0}
@@ -56,6 +82,18 @@ class Application:
         })
 
     async def get_images(self, data=Body()) -> JSONResponse:
+        if "user_id" not in data:
+            return JSONResponse(
+                {"status_code": -1,
+                 "message": "wrong body"}
+            )
+        if data["user_id"] not in self.running_processes:
+            return JSONResponse({
+                JSONResponse(
+                    {"status_code": -2,
+                     "message": "generation prcess not finded"}
+                )
+            })
         user_id = data["user_id"]
         images = await self.running_processes[user_id].get_images_base_64()
         if images:
@@ -69,6 +107,23 @@ class Application:
                 "message": "images in generation process"
             })
 
+    async def get_voice(self, data=Body()) -> JSONResponse:
+        if "user_id" not in data:
+            return JSONResponse(
+                {"status_code": -1,
+                 "message": "wrong body"}
+            )
+        if data["user_id"] not in self.running_processes:
+            return  JSONResponse(
+                    {"status_code": -2,
+                     "message": "generation prcess not finded"}
+                )
+        user_id = data["user_id"]
+        voice_bin = await self.running_processes[user_id].get_speech()
+        return JSONResponse({
+            "status": 0,
+            "voice": base64.b64encode(voice_bin).decode("ascii")
+        })
 
     def setup_routing(self):
         self.app.add_api_route(
@@ -93,6 +148,21 @@ class Application:
             response_class=JSONResponse,
             name=f"start_img_gen"
         )
+        self.app.add_api_route(
+            f"/api/get_voice",
+            methods=["GET"],
+            endpoint=self.get_voice,
+            response_class=JSONResponse,
+            name=f"get_voice"
+        )
+        self.app.add_api_route(
+            f"/api/get_text_generation_result",
+            methods=["GET"],
+            endpoint=self.get_text_generation_result,
+            response_class=JSONResponse,
+            name=f"get_text_gen_result"
+        )
+
 
 
 
