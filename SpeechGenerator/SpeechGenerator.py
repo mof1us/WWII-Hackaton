@@ -19,12 +19,16 @@ class SpeechGenerator:
         self.synthesizeAudio = SpeechSynthesis(self.oauth_session)
         self.logger.info("End of setupping Speech gen")
 
+        self.result_voice: bytes = None
+
     def generate_voice(self) -> bytes:
-        audio_data = self.synthesizeAudio.synthesize_stream(
+        if self.result_voice:
+            return self.result_voice
+        self.result_voice = self.synthesizeAudio.synthesize_stream(
             text=self.speech_text,
             voice=self.speaker_voice, format='oggopus', sampleRateHertz='16000'
         )
-        return audio_data
+        return self.result_voice
 
 
 if __name__ == "__main__":

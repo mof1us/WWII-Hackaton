@@ -16,3 +16,4 @@ fastapi
 uvicorn
 moviepy
 aiohttp_socks
+runwayml

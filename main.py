@@ -2,6 +2,7 @@ import asyncio
 import time
 
 import uvicorn
+from starlette.middleware.cors import CORSMiddleware
 
 from FastApiApplication.Application import Application
 from ImageGen.StaticImageGenerator import StaticImageGenerator
@@ -42,7 +43,7 @@ async def main():
     voice_generator = SpeechGenerator(genemi_result["original_text"], genemi_result["sex"])
     voice_bytes = voice_generator.generate_voice()
     # Дальше только монтаж, для примера сохраню голос в файл (на бэке этого не будет)
-    with open("voice.mp3", "wb") as f:
+    with open("MovieMaker/voice.mp3", "wb") as f:
         f.write(voice_bytes)
 
 
@@ -51,6 +52,14 @@ async def main():
 #     asyncio.run(main())
 if __name__ == "__main__":
     app = Application()
+    app.app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     uvicorn.run(
         app.app,  # передаём сюда свойство app
         host="0.0.0.0",
